@@ -13,4 +13,8 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile 'mysql:mysql-connector-java:8.0.23'
 
+
+    implementation 'com.h2database:h2:1.4.199'
+    implementation 'org.hibernate:hibernate-core:5.4.2.Final'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.12.3'
 }

@@ -1,5 +1,10 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import javax.persistence.*;
 import java.util.Objects;
 import java.util.Set;
@@ -15,6 +20,7 @@ public class BookCase {
 
     //FK Shelf
     @ManyToMany(fetch = FetchType.LAZY, mappedBy = "bookCases")//, cascade = CascadeType.MERGE)
+    @JsonIgnore
     private Set<Shelf> shelves;
 
     public Long getId() {
@@ -53,7 +59,6 @@ public class BookCase {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BookCase bookCase = (BookCase) o;
-//        return this.name.equals(bookCase.name);
         for(Shelf shelf: this.shelves){
             for(Shelf shelfOfBookCase: bookCase.getShelves()){
                 if(shelf.getName().equals(shelfOfBookCase.getName())){
@@ -62,15 +67,7 @@ public class BookCase {
             }
         }
         return false;
-//        return Objects.equals(this.name, bookCase.name) &&
-//                this.shelves.stream().anyMatch(shelf -> shelf.getName().equals(bookCase.getShelves().stream().iterator().getClass().getName()));
     }
-
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(name, shelves);
-//    }
-
 
     @Override
     public String toString() {

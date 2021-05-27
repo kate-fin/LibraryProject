@@ -1,5 +1,7 @@
 package model;
 
+import com.fasterxml.jackson.annotation.*;
+
 import javax.persistence.*;
 import java.util.List;
 import java.util.Objects;
@@ -15,12 +17,14 @@ public class Shelf {
     private String name;
 
     //FK to BookCase
-    @ManyToMany//(cascade = CascadeType.MERGE)
+    @ManyToMany
     @JoinTable(
             joinColumns = @JoinColumn(referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(referencedColumnName = "id")
     )
+    @JsonIgnore
     private Set<BookCase> bookCases;
+
 
     public Set<BookCase> getBookCases() {
         return bookCases;
@@ -30,14 +34,10 @@ public class Shelf {
         this.bookCases = bookCases;
     }
 
-    public Set<BookCase> getBookCase() {
-        return bookCases;
-    }
-
     public void setBookCase(Set<BookCase> bookCase) {
         this.bookCases = bookCase;
     }
-
+    
     public Long getId() {
         return id;
     }
@@ -60,29 +60,6 @@ public class Shelf {
         Shelf shelf = (Shelf) o;
         return shelf.name.equals(this.name);
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Shelf shelf = (Shelf) o;
-        for(BookCase bookCase: this.bookCases){
-            for(BookCase bookCaseOfShelf: shelf.getBookCase()){
-                if(bookCase.getName().equals(bookCaseOfShelf.getName())){
-                    return Objects.equals(this.name, shelf.name);
-                }
-            }
-        }
-        return false;
-//        return Objects.equals(name, shelf.name) &&
-//                bookCases.stream().anyMatch(bookCase -> bookCase.getName().equals(shelf.getBookCase().getClass().getName()));
-    }
-
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(name, bookCases);
-//    }
-
 
     @Override
     public String toString() {

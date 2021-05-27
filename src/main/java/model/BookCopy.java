@@ -1,5 +1,7 @@
 package model;
 
+import com.fasterxml.jackson.annotation.*;
+
 import javax.persistence.*;
 
 @Entity
@@ -17,8 +19,8 @@ public class BookCopy {
     @JoinColumn(nullable = false)
     private BookCase bookCase;
 
-    @ManyToOne//(fetch = FetchType.LAZY)//(cascade = CascadeType.ALL)
-    @JoinColumn(nullable = false)//(name = "book_id", insertable = false, updatable = false)
+    @ManyToOne
+    @JoinColumn(nullable = false)
     private Book book;
 
     public Book getBook() {

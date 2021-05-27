@@ -7,7 +7,6 @@
 
         <!--        <mapping-file>\META-INF\mapping.xml</mapping-file>-->
 
-<!--        <class>model.Admin</class>-->
         <class>model.Author</class>
         <class>model.Book</class>
         <class>model.BookCase</class>

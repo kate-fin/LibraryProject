@@ -1,3 +1,5 @@
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import model.*;
 
 import java.math.BigInteger;
@@ -7,9 +9,15 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+
 public class Main {
 
     static Scanner in = new Scanner(System.in);
+    private static final EntityManagerFactory managerFactory = Persistence.createEntityManagerFactory("library");
 
     public static String encryptThisString(String input) {
         try {
@@ -40,7 +48,7 @@ public class Main {
         System.out.print("Придумайте пароль: ");
         reader.setPassword(encryptThisString(in.nextLine()));
         //saving login-password
-        MainCRUD.createObjectInDB(reader);
+        MainCRUD.createObjectInDB(reader, managerFactory);
     }
 
     private static boolean authentication() {
@@ -51,32 +59,26 @@ public class Main {
         String password = encryptThisString(in.nextLine());
         reader.setLogin(login);
         reader.setPassword(password);
-        return MainQuery.isReader(reader);
+        return MainQuery.isReader(reader, managerFactory);
     }
 
-    private static BookCopy inputBookCopy(Boolean isAdd) {// throws Exception {
+    private static BookCopy inputBookCopy(Boolean isAdd) {
         Book book = inputBook(isAdd);
-//        if (book == null){
-//            throw new Exception("нет книги с такими параметрами");
-//        }
         BookCase bookCase = new BookCase();
         Shelf shelf = new Shelf();
         BookCopy bookCopy = new BookCopy();
-        System.out.print("Я знаю номер шкафа и номер полки, где стоит книга (да/нет): ");
-        if (in.nextLine().toLowerCase().equals("да")) {
-            System.out.print("Введите номер шкафа, где стоит книга: ");
-            bookCase.setName(in.nextLine());
-            System.out.print("Введите номер полки, где стоит книга: ");
-            shelf.setName(in.nextLine());
-            bookCase.setShelves(Set.of(shelf));
-            shelf.setBookCase(Set.of(bookCase));
-            bookCase = MainQuery.getBookCase(bookCase);
-            shelf = MainQuery.getShelf(shelf);
-            book = MainQuery.getBook(book);
-            bookCopy.setBook(book);
-            bookCopy.setShelf(shelf);
-            bookCopy.setBookCase(bookCase);
-        }
+        System.out.print("Введите номер шкафа, где стоит книга: ");
+        bookCase.setName(in.nextLine());
+        System.out.print("Введите номер полки, где стоит книга: ");
+        shelf.setName(in.nextLine());
+        bookCase.setShelves(Set.of(shelf));
+        shelf.setBookCase(Set.of(bookCase));
+        bookCase = MainQuery.getBookCase(bookCase, managerFactory);
+        shelf = MainQuery.getShelf(shelf, managerFactory);
+        book = MainQuery.getBook(book, managerFactory);
+        bookCopy.setBook(book);
+        bookCopy.setShelf(shelf);
+        bookCopy.setBookCase(bookCase);
         return bookCopy;
     }
 
@@ -105,14 +107,14 @@ public class Main {
             if (in.nextLine().toLowerCase().equals("да")) {
                 System.out.print("Введите жанр: ");
                 genre.setName(in.nextLine());
-                genre = MainQuery.getGenre(genre);
+                genre = MainQuery.getGenre(genre, managerFactory);
                 book.setGenre(genre);
             }
             System.out.print("Я знаю издательство книги (да/нет): ");
             if (in.nextLine().toLowerCase().equals("да")) {
                 System.out.print("Введите издательство: ");
                 publisher.setName(in.nextLine());
-                publisher = MainQuery.getPublisher(publisher);
+                publisher = MainQuery.getPublisher(publisher, managerFactory);
                 book.setPublisher(publisher);
             }
         }
@@ -131,11 +133,11 @@ public class Main {
         author.setSurname(in.nextLine());
         System.out.print("Введите псевдоним автора (если есть): ");
         author.setAlias(in.nextLine());
-        author = MainQuery.getAuthor(author, isCreateIfNotExist);
+        author = MainQuery.getAuthor(author, isCreateIfNotExist, managerFactory);
         return author;
     }
 
-    private static Boolean checkIntent() {
+    private static Boolean checkIntent() throws JsonProcessingException {
         System.out.println("Что вы хотите сделать?");
         System.out.println("1. Начать вводить характеристики книги");
         System.out.println("2. Вернуться в меню");
@@ -150,20 +152,23 @@ public class Main {
         return false;
     }
 
-    private static void findBook() {
+    private static void findBook() throws JsonProcessingException {
         System.out.println("1. Список всех книг в библиотеке");
         System.out.println("2. Найти расположение определенной книги");
         System.out.println("3. Вернуться в меню");
         switch (in.nextLine()) {
             case "1" -> {
-                MainQuery.getAllBookCopy();
+                List<BookCopy> data = MainQuery.getAllBookCopy(managerFactory);
+                for (BookCopy d : data) {
+                    System.out.println(toJson(d));
+                }
             }
             case "2" -> {
                 Book book = inputBook(false);
-                List<BookCopy> bookCopies = MainQuery.getBookCopy(book);
+                List<BookCopy> bookCopies = MainQuery.getBookCopy(book, managerFactory);
                 if (bookCopies.size() != 0) {
                     for (BookCopy bookCopy : bookCopies) {
-                        System.out.println(bookCopy.toString());
+                        System.out.println(toJson(bookCopy));
                     }
                 } else {
                     System.out.println("Такой книги не найдено");
@@ -177,38 +182,32 @@ public class Main {
     }
 
 
-    private static void addBook() {
+    private static void addBook() throws JsonProcessingException {
         if (checkIntent()) {
             BookCopy bookCopy = inputBookCopy(true);
             //adding book
-            MainCRUD.createObjectInDB(bookCopy);
+            MainCRUD.createObjectInDB(bookCopy, managerFactory);
             System.out.println("книга добавлена\n");
         }
     }
 
-    private static void deleteBook() {
-        System.out.println("1. Я знаю расположение книги");
-        System.out.println("2. Я не знаю расположение книги");
-        System.out.println("3. Вернуться в меню");
+    private static void deleteBook() throws JsonProcessingException {
+        System.out.println("1. Начать вводить характеристики книги");
+        System.out.println("2. Вернуться в меню");
         switch (in.nextLine()) {
             case "1" -> {
-                BookCopy bookCopy = inputBookCopy(false);
-                //deleting book
-                MainCRUD.deleteBookCopy(bookCopy);
-            }
-            case "2" -> {
                 Book book = inputBook(false);
-                List<BookCopy> bookCopies = MainQuery.getBookCopy(book);
+                List<BookCopy> bookCopies = MainQuery.getBookCopy(book, managerFactory);
                 if (bookCopies.size() != 0) {
-                    System.out.println("Номер\tКнига");
                     for (int i = 0; i < bookCopies.size(); i++) {
-                        System.out.println((i + 1) + ". " + bookCopies.get(i).toString());
+                        System.out.println("Книга номер " + (i + 1) + ". ");
+                        System.out.println(toJson(bookCopies.get(i)));
                     }
                     System.out.println("Введите номер книги из списка, которую хотите удалить");
                     int num = in.nextInt();
                     num--;
                     if (num < bookCopies.size() && num > -1) {
-                        MainCRUD.deleteBookCopy(bookCopies.get(num));
+                        MainCRUD.deleteBookCopy(bookCopies.get(num), managerFactory);
                         System.out.println("книга удалена\n");
                     } else {
                         System.out.println("Книги под таким номером не существует");
@@ -217,13 +216,13 @@ public class Main {
                     System.out.println("Такой книги не найдено");
                 }
             }
-            case "3" -> {
+            case "2" -> {
                 menu();
             }
         }
     }
 
-    private static void moveBook() {
+    private static void moveBook() throws JsonProcessingException {
         BookCase bookCaseBefore = new BookCase();
         Shelf shelfBefore = new Shelf();
         BookCase bookCaseAfter = new BookCase();
@@ -239,14 +238,14 @@ public class Main {
             shelfAfter.setName(in.nextLine());
             bookCaseAfter.setShelves(Set.of(shelfAfter));
             shelfAfter.setBookCase(Set.of(bookCaseAfter));
-            bookCaseAfter = MainQuery.getBookCase(bookCaseAfter);
-            shelfAfter = MainQuery.getShelf(shelfAfter);
+            bookCaseAfter = MainQuery.getBookCase(bookCaseAfter, managerFactory);
+            shelfAfter = MainQuery.getShelf(shelfAfter, managerFactory);
             //moving book
-            List<BookCopy> bookCopies = MainQuery.getBookCopy(bookCaseBefore, shelfBefore);
+            List<BookCopy> bookCopies = MainQuery.getBookCopy(bookCaseBefore, shelfBefore, managerFactory);
             if (bookCopies.size() != 0) {
-                System.out.println("Номер\tКнига");
                 for (int i = 0; i < bookCopies.size(); i++) {
-                    System.out.println((i + 1) + ". " + bookCopies.get(i).toString());
+                    System.out.println("Книга номер " + (i + 1) + ". ");
+                    System.out.println(toJson(bookCopies.get(i)));
                 }
                 System.out.println("Введите номер книги из списка, которую хотите переместить");
                 int num = in.nextInt();
@@ -256,9 +255,9 @@ public class Main {
                     bookCopy.setBookCase(bookCaseAfter);
                     bookCopy.setShelf(shelfAfter);
                     try {
-                        MainCRUD.updateBookCopy(bookCopy);
+                        MainCRUD.updateBookCopy(bookCopy, managerFactory);
                     } catch (Exception e) {
-                        MainCRUD.updateBookCopy(bookCopy);
+                        MainCRUD.updateBookCopy(bookCopy, managerFactory);
                     }
                     System.out.println("расположение изменено\n");
                 } else {
@@ -270,55 +269,15 @@ public class Main {
         }
     }
 
-    public static Book testCreate() {
-        Author _author = new Author();
-        _author.setName("Леонид");
-        _author.setPatronymic("Юрьевич");
-        _author.setSurname("Краснов");
-        _author.setAlias("нет");
-        Author author = MainQuery.getAuthor(_author, true);
-
-        Genre _genre = new Genre();
-        _genre.setName("роман");
-        Genre genre = MainQuery.getGenre(_genre);
-
-        Publisher _publisher = new Publisher();
-        _publisher.setName("Дрофа");
-        Publisher publisher = MainQuery.getPublisher(_publisher);
-        BookCase _bookCase = new BookCase();
-        _bookCase.setName("2");
-
-        Shelf _shelf = new Shelf();
-        _shelf.setName("2");
-        _bookCase.setShelves(Set.of(_shelf));
-        _shelf.setBookCase(Set.of(_bookCase));
-        BookCase bookCase = MainQuery.getBookCase(_bookCase);
-        Shelf shelf = MainQuery.getShelf(_shelf);
-        Book _book = new Book();
-        _book.setName("Демон");
-        _book.setYear(2000);
-        _book.setAuthor(author);
-        _book.setGenre(genre);
-        _book.setPublisher(publisher);
-
-        Book book = MainQuery.getBook(_book);
-
-        BookCopy bookCopy1 = new BookCopy();
-        bookCopy1.setBook(book);
-        bookCopy1.setShelf(shelf);
-        bookCopy1.setBookCase(bookCase);
-        book.setBookCopies(List.of(bookCopy1));
-        return book;
-
-    }
-
-    public static void main(String[] args) {
-        Book b = testCreate();
-
+    public static void main(String[] args) throws JsonProcessingException {
         entry();
     }
 
-    private static void entry() {
+    private static String toJson(Object o) throws JsonProcessingException {
+        return new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writerWithDefaultPrettyPrinter().writeValueAsString(o);
+    }
+
+    private static void entry() throws JsonProcessingException {
         System.out.println("Добро пожаловать в библиотеку!");
         boolean access = false;
         while (!access) {
@@ -342,7 +301,7 @@ public class Main {
         menu();
     }
 
-    private static void menu() {
+    private static void menu() throws JsonProcessingException {
         boolean flag = true;
         while (flag) {
             System.out.println("Что вы хотите сделать?");
@@ -370,6 +329,7 @@ public class Main {
                 }
                 case "6" -> {
                     flag = false;
+                    System.exit(0);
                 }
                 default -> {
                     System.out.println("Введите номер");

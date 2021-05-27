@@ -1,9 +1,10 @@
 package model;
 
+import com.fasterxml.jackson.annotation.*;
+
 import javax.persistence.*;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @Entity
 public class Book {
@@ -15,20 +16,21 @@ public class Book {
     private int year;
 
     //FK to BookCopy
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "book")//, cascade = CascadeType.ALL)
-//    @JoinColumn
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "book")
+    @JsonIgnore
     private List<BookCopy> bookCopies;
 
     //FK to Author
-    @ManyToOne(fetch = FetchType.EAGER)//, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER)
     private Author author;
+
     //FK to Genre
-    @ManyToOne(fetch = FetchType.EAGER)//, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER)
+//    @JsonBackReference
     private Genre genre;
 
     //FK to Publisher
-    @ManyToOne(fetch = FetchType.EAGER)//, cascade = CascadeType.ALL)
-    //@JoinColumn
+    @ManyToOne(fetch = FetchType.EAGER)
     private Publisher publisher;
 
     public Long getId() {

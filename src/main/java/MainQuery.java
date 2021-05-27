@@ -11,9 +11,8 @@ import java.util.List;
 import java.util.Set;
 
 public class MainQuery {
-    private static final EntityManagerFactory managerFactory = Persistence.createEntityManagerFactory("library");
 
-    protected static Author getAuthor(Author author, Boolean isCreateIfNotExist) {
+    protected static Author getAuthor(Author author, Boolean isCreateIfNotExist, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Author> criteria = cb.createQuery(Author.class);
@@ -28,13 +27,13 @@ public class MainQuery {
             }
         }
         if (isCreateIfNotExist) {
-            MainCRUD.createObjectInDB(author);
+            MainCRUD.createObjectInDB(author, managerFactory);
             return author;
         }
         return null;
     }
 
-    protected static Book getBook(Book book) {
+    protected static Book getBook(Book book, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Book> criteria = cb.createQuery(Book.class);
@@ -48,11 +47,11 @@ public class MainQuery {
                 return d;
             }
         }
-        MainCRUD.createObjectInDB(book);
+        MainCRUD.createObjectInDB(book, managerFactory);
         return book;
     }
 
-    private static boolean isBookCase(BookCase bookCase) {
+    private static boolean isBookCase(BookCase bookCase, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<BookCase> criteria = cb.createQuery(BookCase.class);
@@ -69,47 +68,34 @@ public class MainQuery {
         return false;
     }
 
-    protected static BookCase getBookCase(BookCase bookCase) {
+    protected static BookCase getBookCase(BookCase bookCase, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<BookCase> criteria = cb.createQuery(BookCase.class);
         Root<BookCase> root = criteria.from(BookCase.class);
         criteria
                 .select(root);
-//                .orderBy(cb.desc(personRoot.get("passport").get("series")), cb.desc(personRoot.get("passport").get("no")));
         List<BookCase> data = em.createQuery(criteria)
                 .getResultList();
-//                .forEach(System.out::println);
         for (BookCase d : data) {
             if (bookCase.equalsName(d)) {
-                if (bookCase.equals(d)) {
-                    return d;
-                } else {
+                if (!bookCase.equals(d)) {
                     Set<Shelf> shelves = bookCase.getShelves();
                     for (Shelf s : shelves) {
-                        if (!isShelf(s)) {
+                        if (!isShelf(s, managerFactory)) {
                             s.setBookCase(Set.of(d));
-                            MainCRUD.createObjectInDB(s);
+                            MainCRUD.createObjectInDB(s, managerFactory);
                         }
                     }
-                    return d;
-//                    List<BookCase> dataNew = em.createQuery(criteria)
-//                            .getResultList();
-//                    for (BookCase d1: dataNew) {
-//                        if (bookCase.equalsName(d1)) {
-//                            if (bookCase.equals(d1)) {
-//                                return d1;
-//                            }
-//                        }
-//                    }
                 }
+                return d;
             }
         }
-        MainCRUD.createObjectInDB(bookCase);
+        MainCRUD.createObjectInDB(bookCase, managerFactory);
         return bookCase;
     }
 
-    protected static Genre getGenre(Genre genre) {
+    protected static Genre getGenre(Genre genre, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Genre> criteria = cb.createQuery(Genre.class);
@@ -123,11 +109,11 @@ public class MainQuery {
                 return d;
             }
         }
-        MainCRUD.createObjectInDB(genre);
+        MainCRUD.createObjectInDB(genre, managerFactory);
         return genre;
     }
 
-    protected static Publisher getPublisher(Publisher publisher) {
+    protected static Publisher getPublisher(Publisher publisher, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Publisher> criteria = cb.createQuery(Publisher.class);
@@ -141,21 +127,19 @@ public class MainQuery {
                 return d;
             }
         }
-        MainCRUD.createObjectInDB(publisher);
+        MainCRUD.createObjectInDB(publisher, managerFactory);
         return publisher;
     }
 
-    protected static Boolean isReader(Reader reader) {
+    protected static Boolean isReader(Reader reader, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Reader> criteria = cb.createQuery(Reader.class);
         Root<Reader> readerRoot = criteria.from(Reader.class);
         criteria
                 .select(readerRoot);
-//                .orderBy(cb.desc(personRoot.get("passport").get("series")), cb.desc(personRoot.get("passport").get("no")));
-        List<Reader> data = em.createQuery(criteria)
+       List<Reader> data = em.createQuery(criteria)
                 .getResultList();
-//                .forEach(System.out::println);
         for (Reader d : data) {
             if (reader.getLogin().equals(d.getLogin()) && reader.getPassword().equals(d.getPassword())) {
                 return true;
@@ -165,7 +149,7 @@ public class MainQuery {
     }
 
 
-    public static Boolean isShelf(Shelf shelf) {
+    public static Boolean isShelf(Shelf shelf, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Shelf> criteria = cb.createQuery(Shelf.class);
@@ -182,7 +166,7 @@ public class MainQuery {
         return false;
     }
 
-    public static Shelf getShelf(Shelf shelf) {
+    public static Shelf getShelf(Shelf shelf, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Shelf> criteria = cb.createQuery(Shelf.class);
@@ -192,26 +176,24 @@ public class MainQuery {
                 .getResultList();
         for (Shelf d : data) {
             if (shelf.equalsName(d)) {
-                if (shelf.equals(d)) {
-                    return d;
-                } else {
+                if (!shelf.equals(d)) {
                     Set<BookCase> bookCases = shelf.getBookCases();
-                    for (BookCase b: bookCases) {
-                        if (!isBookCase(b)) {
+                    for (BookCase b : bookCases) {
+                        if (!isBookCase(b, managerFactory)) {
                             b.setShelves(Set.of(d));
-                            MainCRUD.createObjectInDB(b);
+                            MainCRUD.createObjectInDB(b, managerFactory);
                         }
                     }
-                    return d;
                 }
+                return d;
             }
         }
-        MainCRUD.createObjectInDB(shelf);
+        MainCRUD.createObjectInDB(shelf, managerFactory);
         return shelf;
     }
 
 
-    public static void getAllBookCopy() {
+    public static List<BookCopy> getAllBookCopy(EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<BookCopy> criteria = cb.createQuery(BookCopy.class);
@@ -219,14 +201,11 @@ public class MainQuery {
         criteria
                 .select(root)
                 .orderBy(cb.asc(root.get("book").get("author").get("surname")), cb.asc(root.get("book").get("name")));
-        List<BookCopy> data = em.createQuery(criteria)
+        return em.createQuery(criteria)
                 .getResultList();
-        for (BookCopy d : data) {
-            System.out.println(d.toString());
-        }
     }
 
-    public static List<BookCopy> getBookCopy(Book book) {
+    public static List<BookCopy> getBookCopy(Book book, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<BookCopy> criteria = cb.createQuery(BookCopy.class);
@@ -237,12 +216,11 @@ public class MainQuery {
                 .select(root)
                 .where(cb.and(predicateForBookName, predicateForBookAuthor))
                 .orderBy(cb.asc(root.get("book").get("author").get("surname")), cb.asc(root.get("book").get("name")));
-        List<BookCopy> data = em.createQuery(criteria)
+        return em.createQuery(criteria)
                 .getResultList();
-        return data;
     }
 
-    public static List<BookCopy> getBookCopy(BookCase bookCase, Shelf shelf) {
+    public static List<BookCopy> getBookCopy(BookCase bookCase, Shelf shelf, EntityManagerFactory managerFactory) {
         EntityManager em = managerFactory.createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<BookCopy> criteria = cb.createQuery(BookCopy.class);
@@ -253,33 +231,7 @@ public class MainQuery {
                 .select(root)
                 .where(cb.and(predicateForBookCase, predicateForShelf))
                 .orderBy(cb.asc(root.get("book").get("author").get("surname")), cb.asc(root.get("book").get("name")));
-        List<BookCopy> data = em.createQuery(criteria)
+        return em.createQuery(criteria)
                 .getResultList();
-        return data;
     }
-
-    public static void main(String[] args) {
-//        getAllBookCopy();
-        Author _author = new Author();
-        _author.setName("Михаил");
-        _author.setPatronymic("Юрьевич");
-        _author.setSurname("Лермонтов");
-//        _author.setAlias("нет");
-        Author author = MainQuery.getAuthor(_author, false);
-//        Genre _genre = new Genre();
-//        _genre.setName("роман");
-//        Genre genre = MainQuery.getGenre(_genre);
-//        Publisher _publisher = new Publisher();
-//        _publisher.setName("Дрофа");
-//        Publisher publisher = MainQuery.getPublisher(_publisher);
-        Book _book = new Book();
-        _book.setName("Демон");
-//        _book.setYear(2000);
-        _book.setAuthor(author);
-//        _book.setGenre(genre);
-//        _book.setPublisher(publisher);
-        getBookCopy(_book);
-        //Book book = MainQuery.getBook(_book);
-    }
-
 }

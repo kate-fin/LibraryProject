@@ -2,10 +2,7 @@ package model;
 
 import javax.persistence.*;
 import java.util.Objects;
-import java.util.Set;
 
-
-@DiscriminatorValue("author")
 @Entity
 public class Author extends Person{
     private String alias;
@@ -17,7 +14,6 @@ public class Author extends Person{
     public void setAlias(String alias) {
         this.alias = alias;
     }
-
 
     @Override
     public boolean equals(Object o) {

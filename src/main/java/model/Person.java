@@ -1,11 +1,12 @@
 package model;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import javax.persistence.*;
 
 
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorValue("person")
-@DiscriminatorColumn(name = "details")
 @Entity
 public class Person {
     @Id
@@ -48,8 +49,6 @@ public class Person {
     public void setPatronymic(String patronymic) {
         this.patronymic = patronymic;
     }
-
-    public Person getPersonClass(){return this;}
 
     @Override
     public String toString() {
